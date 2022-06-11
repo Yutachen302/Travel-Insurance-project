@@ -1,0 +1,380 @@
+---
+title: "Travel insurance"
+author: "Yuta Chen"
+date: "6/3/2022"
+output: html_document
+---
+
+
+```{r}
+setwd("~/Desktop/HS 614 Clinical Decision Support ")
+df<-read.csv('travel_insurance.csv')
+head(df)
+```
+
+#Library
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+#library(tidyverse)
+#library(janitor)
+library(readr)
+```
+
+#Summary
+#Average age of the travalers are 29.65 years old
+#Average annual income for the travalers are $932,763
+#They travled with 4.753 family members 
+#27.78% of the travelers with chronic disease 
+```{r}
+summary(df)
+```
+
+#Sructure
+```{r}
+str(df)
+```
+
+
+###EDA
+
+#Age
+```{r}
+ggplot(data=df)+geom_density(aes(x=Age), color='black')+ 
+  theme(axis.text = element_text(colour = "blue"),text = element_text(size=15),axis.line = element_line(size = 1, colour = "grey80"))+ggtitle(labs(title = 'Distribution of Age'))
+```
+
+#Distribution of travelers from different age group with travel insurance purchased
+```{r}
+ggplot(df, aes(Age)) + geom_bar(aes(fill=factor(TravelInsurance))) + ggtitle(labs(title = 'Age vs. Travel Insurance'))
+```
+
+#Boxplot shows us that travelers who bought insuarnce are about 20 years old, slightly older than the travellers without insuarnce
+```{r}
+ggplot(df,aes(x=TravelInsurance, y=Age, group=TravelInsurance, fill=TravelInsurance)) + geom_boxplot() + labs(y='Age')
+```
+
+
+#Employmeny Type
+#Private sector/self employed travelers are about 2 times more than gevernment sector
+```{r}
+ggplot(df, aes(EmploymentType))+geom_bar(fill='bisque2',color='black') + ggtitle('Distribution of Employment Type')
+```
+
+#Travellers who work in government sector have insurances less than travellers who works in Private Sector/Self Employed
+```{r}
+ggplot(df, aes(EmploymentType)) + geom_bar(aes(fill=factor(TravelInsurance)), position='dodge') + ggtitle("Employment Type vs. Travel Insurance")
+```
+
+
+
+#Graduate or not 
+#1692 graduate / 295 do not grauate 
+```{r}
+ggplot(df, aes(GraduateOrNot))+geom_bar(fill='gold3', color='black')+ ggtitle('Distribution of Graduation or Not')
+table(df$GraduateOrNot)
+```
+
+#Graduate level is not a good factor to determine if a traveller will purchase the insuarce or not 
+```{r}
+ggplot(df, aes(GraduateOrNot)) + geom_bar(position='dodge',aes(fill=factor(TravelInsurance))) + ggtitle(labs('Graduate vs. Insuarance'))
+```
+
+
+#Annual Income 
+```{r}
+ggplot(df, aes(AnnualIncome))+geom_density(fill='red', alpha=0.4)+ ggtitle('Distribution of Annual Income')
+```
+
+
+#Higher annual income the traveler make, more likely the traveller with purchase travel insuarance 
+```{r}
+ggplot(df, aes(AnnualIncome)) + geom_density(aes(fill=factor(TravelInsurance)), alpha=0.5) + ggtitle("Annual Income vs. Insuarance")
+```
+
+
+#Family Members
+```{r}
+ggplot(df, aes(FamilyMembers))+geom_bar(fill='cyan3',color='black')+ ggtitle('Distribution of Family Members')
+
+table(df$FamilyMembers)
+```
+
+#Density plot shows that there is no strong relationship between the number of family members and travel insuarance purchased
+```{r}
+ggplot(df, aes(FamilyMembers)) + geom_density(aes(fill=factor(TravelInsurance)), alpha=0.4) + ggtitle("Family Members vs. Insuarance")
+```
+
+#Boxplot shows that the average family memebers from both groups are the same, but insuranced family has more cases of having more 6 members
+```{r}
+ggplot(df, aes(FamilyMembers)) + geom_boxplot(aes(fill=factor(TravelInsurance))) + ggtitle("Family Members vs. Insuarance")
+```
+
+
+#Chronic Diseases
+#Most of the travellers are without chronic diseases
+```{r}
+ggplot(df, aes(ChronicDiseases))+geom_bar(fill='azure2', color='black')+ ggtitle('Distribution of Chronic Diseases')
+
+table(df$ChronicDiseases)
+```
+
+#The travelers who developed chronic diseases tends to have no travel insurance which might due to the insurace company declined their travel insurace because of theor health status
+```{r}
+ggplot(df, aes(ChronicDiseases)) + geom_bar(aes(fill=factor(TravelInsurance)), position='dodge') + ggtitle("Chronic disease vs. Travel Insurance")
+```
+
+
+#Frequent Flyer
+```{r}
+ggplot(df, aes(FrequentFlyer))+geom_bar(fill='pink', color='black') + ggtitle("Distribution of Frequent Flyer")
+```
+
+#Nearly half of the non-frequent-flyers have travel insuarnce, and there is more frequent-travelers with travel insuarance than those frequent-travelers without travel insuarance
+```{r}
+ggplot(df, aes(FrequentFlyer)) + geom_bar(aes(fill=factor(TravelInsurance)), position='dodge') + ggtitle("Frequent Flyer vs. Travel Insurance")
+```
+
+#Ever Travel Abroad
+#The travellers never travel abroad are almost 4 times more than travellers who have traveled abroad before
+```{r}
+ggplot(df, aes(EverTravelledAbroad))+geom_bar(fill='violet', color='black') + ggtitle("Distribution of Ever Travel Abroad")
+```
+
+#Bar plot shows that the travallers with experience of travel abroad are more likely to purchase travel insuarance
+```{r}
+ggplot(df, aes(EverTravelledAbroad)) + geom_bar(aes(fill=factor(TravelInsurance)), position='dodge') + ggtitle("Ever Travelled Abroad vs. Travel Insurance")
+```
+
+###Summarize 
+#Average age of the travalers are 29.65 years old
+#Average annual income for the travalers are $932,763
+#They travled with 4.753 family members 
+#27.78% of the travelers with chronic disease 
+
+###Build model predict with factors lead to travel insurace purchased
+
+#Create dummy variable for Employment type with 0 and 1
+```{r}
+#df$EmploymentType <- ifelse(df$EmploymentType == "Government Sector",0,1)
+
+#table(df$EmploymentType)
+```
+
+#Convert categoriacl variables into factors for model building 
+```{r}
+str(df)
+
+df$EmploymentType<-as.factor(df$EmploymentType)
+df$GraduateOrNot<-as.factor(df$GraduateOrNot)
+df$FrequentFlyer<-as.factor(df$FrequentFlyer)
+df$EverTravelledAbroad<-as.factor(df$FrequentFlyer)
+df$TravelInsurance<-as.factor(df$TravelInsurance)
+```
+
+
+
+#Split data into train and test data set 
+```{r}
+library(caTools)
+set.seed(123)
+split <- sample.split(df$TravelInsurance, SplitRatio=0.80) 
+df.train <- subset(df, split==TRUE)
+df.test <- subset(df, split==FALSE)
+
+head(df.train)
+```
+
+#Check for NA
+```{r}
+any(is.na(df.train))
+any(is.na(df.test))
+```
+
+###Logistic Regression
+```{r}
+log_model1 <- glm(formula=TravelInsurance ~ . , family=binomial, data = df.train)
+
+summary(log_model1)
+```
+
+#Improving the model with STEPAIC method
+```{r}
+library(MASS)
+
+log_model2 <- stepAIC(log_model1, direction = "backward", trace = FALSE)
+
+summary(log_model2)
+```
+
+Prediction
+```{r}
+log_pred <- predict(log_model2, df.test, type = 'response')
+head(log_pred)
+```
+
+#AUC:0.768
+```{r}
+library(pROC)
+
+roc(df.test$TravelInsurance, log_pred, plot=TRUE, print.auc=TRUE)
+```
+
+#Set threshold to define the outcome 1 or 0
+```{r}
+library(caret)
+
+insurance.class<- ifelse(log_pred < 0.50, 0,1)
+insurance.class <- as.factor(insurance.class)
+
+table(insurance.class)
+```
+
+
+#Confussion Matrix
+#Accuracy : 0.7481
+```{r}
+library(caret)
+library(lattice)
+confusionMatrix(df.test$TravelInsurance, insurance.class)
+```
+
+
+###Decision Tree 
+```{r}
+train_dt <- df.train
+test_dt <- df.test
+
+nrow(test_dt)
+any(is.na(train_dt))
+```
+
+#Fitting data set to the Training set
+```{r}
+library(rpart)
+tree<-rpart(formula = TravelInsurance ~., method = 'class', data = train_dt)
+```
+
+#Predicting the Test set results
+```{r}
+y_pred = predict(tree, newdata = test_dt[-9])
+head(y_pred)
+#Sum of each row equal to 1 
+```
+
+#Set threshold to 0.5.  < 0.5 =class 1 / > 0.5 =class 0
+```{r}
+y_pred_class = ifelse(y_pred[,'0']>=0.5, 0,1)
+head(y_pred_class)
+```
+
+#Visualize the model
+```{r}
+library(rpart.plot)
+prp(tree)
+```
+
+#AUC: 0.782
+```{r}
+library(pROC)
+result.roc = roc(test_dt$TravelInsurance, y_pred[, '0'])
+plot(result.roc, print.auc=TRUE)
+```
+
+#Confusion matrix 
+#Accuracy : 0.8413
+```{r}
+y_pred_class_fac = as.factor(y_pred_class)
+
+confusionMatrix(test_dt$TravelInsurance, y_pred_class_fac)
+```
+
+
+###Random Forest 
+
+#Re-assign train and test set
+```{r}
+train_rf<-df.train
+test_rf<-df.test
+
+str(train_rf)
+```
+
+#Build random forest model
+```{r}
+library(randomForest)
+
+rf_model <- randomForest(formula =TravelInsurance ~ ., method='class',
+                 data = train_rf)
+rf_model
+```
+
+#Check importance of every variable
+#Anuual income, Age, and Family Member are the top 3 variables that show inportance to the outcome variable
+```{r}
+importance(rf_model)
+```
+
+# Predicting the Test set results
+```{r}
+rf_result = predict(rf_model, newdata = test_rf)
+
+head(rf_result)
+```
+
+#Get probability to calculate for AUC
+```{r}
+probability = predict(rf_model, newdata = test_rf,type="prob")
+
+head(probability)
+```
+
+#AUC: 0.807
+```{r}
+result.roc = roc(test_rf$TravelInsurance, probability[, '1'])
+
+plot(result.roc, print.auc=TRUE)
+```
+
+
+#Confussion matrix
+#Accuracy : 0.8413
+```{r}
+confusionMatrix(test_rf$TravelInsurance, rf_result)
+```
+
+
+###Comapre the models 
+
+```{r}
+lapply(list(log_model2, rf_model),FUN = AIC)
+```
+
+
+
+
+
+###Conclusion 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
